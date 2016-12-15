@@ -10,9 +10,12 @@ unsigned int sampleRate = 44100;
 unsigned int bufferFrames = 512; // 512 sample frames
 const int bandNumber = 64;
 const int width = bufferFrames / bandNumber;
+const int historyValues = sampleRate / (bufferFrames * 2);
 int a = 0;
 std::vector<signed short> window;
 std::vector<double> v;
+std::vector<std::vector<double>> historyBuffer; //rows are frequency, cols are histories
+std::vector<double> meanHistory(bandNumber);
 
 void fft(std::vector<signed short> &rawValues, std::vector<double> &output) //move this over to GPU_FFT
 {
@@ -38,14 +41,14 @@ void fft(std::vector<signed short> &rawValues, std::vector<double> &output) //mo
     delete[] outputChannel;
 }
 
-float computeMean(std::vector<signed short> &v)
+double computeMean(std::vector<double> &v)
 {
-    std::cout << v.size() << std::endl;
-    long sum = 0;
+//    std::cout << v.size() << std::endl;
+    double sum = 0;
     for (auto it = v.begin(); it != v.end(); it++) {
         sum += (*it > 0) ? *it : *it*-1;
     }
-    return (float)sum / (float)v.size();
+    return sum / v.size();
 }
 
 std::vector<double> returnSubbands(/*std::vector<double> &subbands, */std::vector<double> &input, int bandNumber)
@@ -80,6 +83,26 @@ void processBuffer()
 //        std::cout << i*44100.0/(n*2) << ' ' << (output[i]) << std::endl; //use log10 or not?
     }
     v = returnSubbands(output, bandNumber);
+    if (historyBuffer.size() < bandNumber) {
+        for (i = 0; i < bandNumber; i++) {
+            std::vector<double> temp;
+            temp.push_back(v[i]);
+            historyBuffer.push_back(temp);
+        }
+    }
+    if (historyBuffer[0].size() < historyValues) {
+        for (i = 0; i < bandNumber; i++) {
+            historyBuffer[i].push_back(v[i]);
+        }
+    } else {
+        for (i = 0; i < bandNumber; i++) {
+            historyBuffer[i].erase(historyBuffer[i].begin());
+            historyBuffer[i].push_back(v[i]);
+        }
+    }
+    for (i = 0; i < bandNumber; i++) {
+        meanHistory[i] = computeMean(historyBuffer[i]);
+    }
 }
 
 int record(void *outputBuffer, void *inputBuffer, unsigned int nBufferFrames,
@@ -117,7 +140,7 @@ int main()
     int i;
     for (i = 0; i < bandNumber; i++) {
         bars[i].setFillColor(sf::Color(200, 000, 200));
-        historyBars[i].setFillColor(sf::Color(20, 40, 50));
+        historyBars[i].setFillColor(sf::Color(20, 40, 250, 100));
     }
 
 
@@ -142,7 +165,6 @@ int main()
 
     sf::RenderWindow window(sf::VideoMode(1280, 900), "FFT visualiser");
 
-    int x = 0;
     window.setVerticalSyncEnabled(true);
     while (window.isOpen()) {
 
@@ -155,17 +177,17 @@ int main()
 
         for (i = 0; i < bandNumber; i++) {
             double height = log10(v[i]) * 100;
-            double historyHeight = 0;//log10(meanHistory[i]) * 100;
+            double historyHeight = log10(meanHistory[i]) * 100;
             bars[i].setSize(sf::Vector2f(2*width, height));
             bars[i].setPosition(i*(width*2 + 1), 1000 - height);
-            historyBars[i].setSize(sf::Vector2f(4*width, historyHeight));
-            historyBars[i].setPosition(i*(width*4 + 1), 1000 - historyHeight);
+            historyBars[i].setSize(sf::Vector2f(2*width, historyHeight));
+            historyBars[i].setPosition(i*(width*2 + 1), 1000 - historyHeight);
         }
-        //window.clear(sf::Color::Black);
+        //window.clear(sf::Color::Black)2
         window.clear();
         for (i = 0; i < bandNumber; i++) {
             window.draw(bars[i]);
-    //        window.draw(historyBars[i]);
+            window.draw(historyBars[i]);
         }
         window.display();
 
