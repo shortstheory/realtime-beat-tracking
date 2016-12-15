@@ -3,12 +3,14 @@
 #include <iostream>
 #include <cstdlib>
 #include <math.h>
+#include <SFML/Graphics.hpp>
 #include <cstring>
 
 unsigned int sampleRate = 44100;
 unsigned int bufferFrames = 512; // 512 sample frames
 const int bandNumber = 32;
-unsigned int historyBins = sampleRate / (bufferFrames * 2 * 2);
+const int width = bufferFrames / bandNumber;
+unsigned int historyBins = sampleRate / (bufferFrames * 2 );
 int a = 0;
 std::vector<signed short> window;
 std::vector<double> outputHistory;
@@ -92,7 +94,7 @@ void processBuffer()
     //    std::cout << i << ' ' << outputHistory[i] << std::endl;
 //    }
 
-    for (i = 0; i < (bandNumber / 2); i++) {
+    for (i = 0; i < (bandNumber ); i++) {
         double mean = 0;
         for (j = 0; j < historyBins; j++) {
             mean += outputHistory[i*bandNumber + j];
@@ -100,7 +102,7 @@ void processBuffer()
         meanHistory[i] = (mean / historyBins);
         //std::cout << i << ' ' << meanHistory[i] << ' ' << v[i] << std::endl;
         if ((v[i]) > meanHistory[i] * 3) {
-            std::cout << "beat " << (v[i]) << ' ' << meanHistory[i] << ' ' << i << std::endl;
+            std::cout << "beat " << log10(v[i]) << ' ' << log10(meanHistory[i]) << ' ' << i << std::endl;
         }
     }
 }
@@ -136,6 +138,14 @@ int main()
         return -1;
     }
 
+    std::vector<sf::RectangleShape> bars(bandNumber), historyBars(bandNumber);
+    int i;
+    for (i = 0; i < bandNumber; i++) {
+        bars[i].setFillColor(sf::Color(200, 000, 200));
+        historyBars[i].setFillColor(sf::Color(20, 40, 50));
+    }
+
+
     RtAudio::StreamParameters parameters;
     parameters.deviceId = adc.getDefaultInputDevice();
     parameters.nChannels = 1;
@@ -155,7 +165,38 @@ int main()
 
     char input;
     std::cout << "\nRecording ... press <enter> to quit.\n";
-    std::cin.get( input );
+//    std::cin.get( input );
+
+    sf::RenderWindow window(sf::VideoMode(1280, 900), "FFT visualiser");
+
+    int x = 0;
+    window.setVerticalSyncEnabled(true);
+    while (window.isOpen()) {
+
+        sf::Event event;
+        while (window.pollEvent(event)) {
+            if (event.type == sf::Event::Closed)
+                window.close();
+        }
+
+
+        for (i = 0; i < bandNumber; i++) {
+            double height = log10(v[i]) * 100;
+            double historyHeight = log10(meanHistory[i]) * 100;
+            bars[i].setSize(sf::Vector2f(2*width, height));
+            bars[i].setPosition(i*(width*2 + 1), 1000 - height);
+            historyBars[i].setSize(sf::Vector2f(4*width, historyHeight));
+            historyBars[i].setPosition(i*(width*4 + 1), 1000 - historyHeight);
+        }
+        //window.clear(sf::Color::Black);
+        window.clear();
+        for (i = 0; i < bandNumber; i++) {
+            window.draw(bars[i]);
+    //        window.draw(historyBars[i]);
+        }
+        window.display();
+
+    }/*
     try {
         adc.stopStream();
     } catch (RtAudioError& e) {
@@ -164,6 +205,6 @@ int main()
 
     if (adc.isStreamOpen()) {
         adc.closeStream();
-    }
+    }*/
     return 0;
 }
