@@ -8,13 +8,10 @@
 
 unsigned int sampleRate = 44100;
 unsigned int bufferFrames = 512; // 512 sample frames
-const int bandNumber = 128;
+const int bandNumber = 64;
 const int width = bufferFrames / bandNumber;
-unsigned int historyBins = sampleRate / (bufferFrames * 2 );
 int a = 0;
 std::vector<signed short> window;
-std::vector<double> outputHistory;
-std::vector<double> meanHistory;
 std::vector<double> v;
 
 void fft(std::vector<signed short> &rawValues, std::vector<double> &output) //move this over to GPU_FFT
@@ -83,29 +80,6 @@ void processBuffer()
 //        std::cout << i*44100.0/(n*2) << ' ' << (output[i]) << std::endl; //use log10 or not?
     }
     v = returnSubbands(output, bandNumber);
-    //std::cout << historyBins << std::endl;
-/*
-    for (i = 0; i < bandNumber; i++) {
-        outputHistory.erase(outputHistory.begin() + i*historyBins);
-        outputHistory.insert(outputHistory.begin() + (i+1)*historyBins - 1, v[i]);
-    //    std::cout << i << ' ' << (v[i]) << std::endl;
-    }
-//    for (i = 0; i < outputHistory.size(); i++) {
-    //    std::cout << i << ' ' << outputHistory[i] << std::endl;
-//    }
-
-    for (i = 0; i < (bandNumber ); i++) {
-        double mean = 0;
-        for (j = 0; j < historyBins; j++) {
-            mean += outputHistory[i*bandNumber + j];
-        }
-        meanHistory[i] = (mean / historyBins);
-        //std::cout << i << ' ' << meanHistory[i] << ' ' << v[i] << std::endl;
-        if ((v[i]) > meanHistory[i] * 3) {
-            std::cout << "beat " << log10(v[i]) << ' ' << log10(meanHistory[i]) << ' ' << i << std::endl;
-        }
-    }
-    */
 }
 
 int record(void *outputBuffer, void *inputBuffer, unsigned int nBufferFrames,
@@ -152,8 +126,6 @@ int main()
     parameters.nChannels = 1;
     parameters.firstChannel = 0;
 
-    outputHistory.resize(historyBins * bandNumber/*, std::vector<double>(bufferFrames*/, 0);
-    meanHistory.resize(bandNumber, 0);
     try {
         adc.openStream(NULL, &parameters, RTAUDIO_SINT16,
                         sampleRate, &bufferFrames, &record);
@@ -197,15 +169,6 @@ int main()
         }
         window.display();
 
-    }/*
-    try {
-        adc.stopStream();
-    } catch (RtAudioError& e) {
-        e.printMessage();
     }
-
-    if (adc.isStreamOpen()) {
-        adc.closeStream();
-    }*/
     return 0;
 }
