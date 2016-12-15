@@ -8,7 +8,7 @@
 
 unsigned int sampleRate = 44100;
 unsigned int bufferFrames = 512; // 512 sample frames
-const int bandNumber = 32;
+const int bandNumber = 128;
 const int width = bufferFrames / bandNumber;
 unsigned int historyBins = sampleRate / (bufferFrames * 2 );
 int a = 0;
@@ -84,7 +84,7 @@ void processBuffer()
     }
     v = returnSubbands(output, bandNumber);
     //std::cout << historyBins << std::endl;
-
+/*
     for (i = 0; i < bandNumber; i++) {
         outputHistory.erase(outputHistory.begin() + i*historyBins);
         outputHistory.insert(outputHistory.begin() + (i+1)*historyBins - 1, v[i]);
@@ -105,6 +105,7 @@ void processBuffer()
             std::cout << "beat " << log10(v[i]) << ' ' << log10(meanHistory[i]) << ' ' << i << std::endl;
         }
     }
+    */
 }
 
 int record(void *outputBuffer, void *inputBuffer, unsigned int nBufferFrames,
@@ -182,7 +183,7 @@ int main()
 
         for (i = 0; i < bandNumber; i++) {
             double height = log10(v[i]) * 100;
-            double historyHeight = log10(meanHistory[i]) * 100;
+            double historyHeight = 0;//log10(meanHistory[i]) * 100;
             bars[i].setSize(sf::Vector2f(2*width, height));
             bars[i].setPosition(i*(width*2 + 1), 1000 - height);
             historyBars[i].setSize(sf::Vector2f(4*width, historyHeight));
