@@ -21,7 +21,7 @@ cmake ..
 make
 ```
 
-And then execute the program in the build/ folder using:
+And then execute the program in the ```build/``` folder using:
 
 ```
 ./realtime-beat
