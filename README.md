@@ -9,7 +9,7 @@ Used for obtaining a visual representation of the FFT of a specified sample take
 First makes sure you have installed the required libraries using:
 
 ```
-sudo apt install libfftw3-dev libfftw3-bin librtaudio-dev librtaudio5a libsfml-dev
+sudo apt install libfftw3-dev libfftw3-bin librtaudio-dev librtaudio5a libsfml-dev cmake
 ```
 
 Then run:
