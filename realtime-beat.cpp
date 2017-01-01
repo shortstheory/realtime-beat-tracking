@@ -2,6 +2,8 @@
 #include <fftw3.h>
 #include <iostream>
 #include <cstdlib>
+#include <stdlib.h>
+#include <string>
 #include <math.h>
 #include <SFML/Graphics.hpp>
 #include <cstring>
@@ -120,6 +122,11 @@ int record(void *outputBuffer, void *inputBuffer, unsigned int nBufferFrames,
     }
 
     processBuffer();
+    for (i = 0; i < bandNumber / 2; i++) {
+        if (log10(v[i]) > log10(meanHistory[i]) * 1.2) {
+            std::cout << log10(v[i]) / log10(meanHistory[i]) << ' ' << "beat@" << ' ' << i << std::endl;
+        }
+    }
 //add a function for processing the data here
     if (window.size() == nBufferFrames*2) {
         window.erase(window.begin(), window.begin() + nBufferFrames);
@@ -128,7 +135,7 @@ int record(void *outputBuffer, void *inputBuffer, unsigned int nBufferFrames,
     return 0;
 }
 
-int main()
+int main(int argc, char *argv[])
 {
     RtAudio adc;
     if (adc.getDeviceCount() < 1) {
@@ -140,12 +147,16 @@ int main()
     int i;
     for (i = 0; i < bandNumber; i++) {
         bars[i].setFillColor(sf::Color(200, 000, 200));
-        historyBars[i].setFillColor(sf::Color(20, 40, 250, 100));
+        historyBars[i].setFillColor(sf::Color(0, 250, 0, 100));
     }
 
 
     RtAudio::StreamParameters parameters;
-    parameters.deviceId = adc.getDefaultInputDevice();
+    if (argc > 1) {
+        parameters.deviceId = atoi(argv[1]);
+    } else {
+        parameters.deviceId = adc.getDefaultInputDevice();
+    }
     parameters.nChannels = 1;
     parameters.firstChannel = 0;
 
@@ -175,7 +186,7 @@ int main()
         }
 
 
-        for (i = 0; i < bandNumber; i++) {
+        for (i = 0; i < bandNumber / 2; i++) {
             double height = log10(v[i]) * 100;
             double historyHeight = log10(meanHistory[i]) * 100;
             bars[i].setSize(sf::Vector2f(2*width, height));
@@ -185,7 +196,7 @@ int main()
         }
         //window.clear(sf::Color::Black)2
         window.clear();
-        for (i = 0; i < bandNumber; i++) {
+        for (i = 0; i < bandNumber / 2; i++) {
             window.draw(bars[i]);
             window.draw(historyBars[i]);
         }
