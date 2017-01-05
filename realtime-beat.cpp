@@ -7,7 +7,8 @@
 #include <math.h>
 #include <SFML/Graphics.hpp>
 #include <cstring>
-
+#include <chrono>
+#include <fstream>
 unsigned int sampleRate = 44100;
 unsigned int bufferFrames = 512; // 512 sample frames
 const int bandNumber = 64;
@@ -18,6 +19,9 @@ std::vector<signed short> window;
 std::vector<double> v;
 std::vector<std::vector<double>> historyBuffer; //rows are frequency, cols are histories
 std::vector<double> meanHistory(bandNumber);
+
+std::chrono::steady_clock::time_point begin;
+std::ofstream output("beats.txt");
 
 void fft(std::vector<signed short> &rawValues, std::vector<double> &output) //move this over to GPU_FFT
 {
@@ -124,7 +128,10 @@ int record(void *outputBuffer, void *inputBuffer, unsigned int nBufferFrames,
     processBuffer();
     for (i = 0; i < bandNumber / 2; i++) {
         if (log10(v[i]) > log10(meanHistory[i]) * 1.2) {
-            std::cout << log10(v[i]) / log10(meanHistory[i]) << ' ' << "beat@" << ' ' << i << std::endl;
+//            std::cout << log10(v[i]) / log10(meanHistory[i]) << ' ' << "beat@" << ' ' << i << std::endl;
+            std::chrono::duration<double> elapsed_seconds = std::chrono::steady_clock::now() - begin;
+            output << elapsed_seconds.count() << std::endl;
+            std::cout<<elapsed_seconds.count() << std::endl;
         }
     }
 //add a function for processing the data here
@@ -170,22 +177,25 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    char input;
     std::cout << "\nRecording ... press <enter> to quit.\n";
-//    std::cin.get( input );
+    std::cin.ignore();
 
+    begin = std::chrono::steady_clock::now();
     sf::RenderWindow window(sf::VideoMode(1280, 900), "FFT visualiser");
 
     window.setVerticalSyncEnabled(true);
     while (window.isOpen()) {
-
         sf::Event event;
         while (window.pollEvent(event)) {
             if (event.type == sf::Event::Closed)
                 window.close();
         }
-
-
+        std::chrono::duration<double> elapsed_seconds = std::chrono::steady_clock::now() - begin;
+        if (elapsed_seconds.count() > 5) {
+            //cleanup
+            output.close();
+            return 0;
+        }
         for (i = 0; i < bandNumber / 2; i++) {
             double height = log10(v[i]) * 100;
             double historyHeight = log10(meanHistory[i]) * 100;
@@ -201,7 +211,7 @@ int main(int argc, char *argv[])
             window.draw(historyBars[i]);
         }
         window.display();
-
     }
+    output.close();
     return 0;
 }
