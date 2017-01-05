@@ -127,11 +127,12 @@ int record(void *outputBuffer, void *inputBuffer, unsigned int nBufferFrames,
 
     processBuffer();
     for (i = 0; i < bandNumber / 2; i++) {
-        if (log10(v[i]) > log10(meanHistory[i]) * 1.2) {
+        if (log10(v[i]) > log10(meanHistory[i]) * 1.3) {
 //            std::cout << log10(v[i]) / log10(meanHistory[i]) << ' ' << "beat@" << ' ' << i << std::endl;
             std::chrono::duration<double> elapsed_seconds = std::chrono::steady_clock::now() - begin;
             output << elapsed_seconds.count() << std::endl;
-            std::cout<<elapsed_seconds.count() << std::endl;
+            std::cout << elapsed_seconds.count() << std::endl;
+//            auto last_beat = elapsed_seconds;
         }
     }
 //add a function for processing the data here
