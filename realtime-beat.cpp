@@ -177,7 +177,7 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    std::cout << "\nRecording ... press <enter> to quit.\n";
+    std::cout << "\nPress any letter and then press enter\n";
     std::cin.ignore();
 
     begin = std::chrono::steady_clock::now();
