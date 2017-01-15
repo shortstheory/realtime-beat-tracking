@@ -179,6 +179,7 @@ int main()
     sf::RenderWindow window(sf::VideoMode(1280, 900), "FFT visualiser");
 
     window.setVerticalSyncEnabled(true);
+    int frameCounter = 0;
     while (window.isOpen()) {
 
         sf::Event event;
@@ -203,14 +204,18 @@ int main()
             historyBars[i].setOrigin(historyBars[i].getSize().x / 2, historyBars[i].getSize().y);
             historyBars[i].setRotation(angularWidth * i * 180.0 / pi);
             historyBars[i].setPosition(node.getPosition().x + nodeRadius * sin(angularWidth * i), node.getPosition().y - nodeRadius * cos(angularWidth * i));
-            if (height > historyHeight * 1.2) {
-                bars[i].setFillColor(sf::Green);
-                node.setFillColor(sf::Green);
+            if (height > historyHeight * 1.07 || height < 1) {
+                bars[i].setFillColor(sf::Color::Green);
+                node.setFillColor(sf::Color::Green);
+                frameCounter = 0;
             } else {
-                bars[i].setFillColor(sf::Color(200, (256 / bandNumber) * i, (256 / bandNumber) * i));
-                node.setFillColor(sf::Black);
+                if (frameCounter > 5) {
+                    bars[i].setFillColor(sf::Color(200, (256 / bandNumber) * i, (256 / bandNumber) * i));
+                    node.setFillColor(sf::Color::Black);
+                }
             }
         }
+        frameCounter++;
 //        testShape.setSize(sf::Vector2f(400, 400));
         testShape.setOrigin(testShape.getSize().x / 2, testShape.getSize().y);
         testShape.setRotation(30);
