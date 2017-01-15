@@ -2,26 +2,27 @@
 #include <fftw3.h>
 #include <iostream>
 #include <cstdlib>
-#include <stdlib.h>
-#include <string>
 #include <math.h>
 #include <SFML/Graphics.hpp>
 #include <cstring>
-#include <chrono>
-#include <fstream>
+
+const float pi = 3.14159265;
+
 unsigned int sampleRate = 44100;
 unsigned int bufferFrames = 512; // 512 sample frames
-const int bandNumber = 64;
+const int bandNumber = 128;
 const int width = bufferFrames / bandNumber;
 const int historyValues = sampleRate / (bufferFrames * 2);
+
+const float nodeRadius = 100;
+const float angularWidth = 2.0 * pi / bandNumber;
+const float barWidth = angularWidth * nodeRadius;
+
 int a = 0;
 std::vector<signed short> window;
 std::vector<double> v;
 std::vector<std::vector<double>> historyBuffer; //rows are frequency, cols are histories
 std::vector<double> meanHistory(bandNumber);
-
-std::chrono::steady_clock::time_point begin;
-std::ofstream output("beats.txt");
 
 void fft(std::vector<signed short> &rawValues, std::vector<double> &output) //move this over to GPU_FFT
 {
@@ -126,15 +127,6 @@ int record(void *outputBuffer, void *inputBuffer, unsigned int nBufferFrames,
     }
 
     processBuffer();
-    for (i = 0; i < bandNumber / 2; i++) {
-        if (log10(v[i]) > log10(meanHistory[i]) * 1.3) {
-//            std::cout << log10(v[i]) / log10(meanHistory[i]) << ' ' << "beat@" << ' ' << i << std::endl;
-            std::chrono::duration<double> elapsed_seconds = std::chrono::steady_clock::now() - begin;
-            output << elapsed_seconds.count() << std::endl;
-            std::cout << elapsed_seconds.count() << std::endl;
-//            auto last_beat = elapsed_seconds;
-        }
-    }
 //add a function for processing the data here
     if (window.size() == nBufferFrames*2) {
         window.erase(window.begin(), window.begin() + nBufferFrames);
@@ -143,7 +135,7 @@ int record(void *outputBuffer, void *inputBuffer, unsigned int nBufferFrames,
     return 0;
 }
 
-int main(int argc, char *argv[])
+int main()
 {
     RtAudio adc;
     if (adc.getDeviceCount() < 1) {
@@ -154,17 +146,19 @@ int main(int argc, char *argv[])
     std::vector<sf::RectangleShape> bars(bandNumber), historyBars(bandNumber);
     int i;
     for (i = 0; i < bandNumber; i++) {
-        bars[i].setFillColor(sf::Color(200, 000, 200));
-        historyBars[i].setFillColor(sf::Color(0, 250, 0, 100));
+        bars[i].setFillColor(sf::Color(200, (256 / bandNumber) * i, (256 / bandNumber) * i));
+        historyBars[i].setFillColor(sf::Color(20, 40, 250, 100));
     }
 
+    sf::CircleShape node(nodeRadius, 48);
+    node.setFillColor(sf::Color::Black);
+    node.setOrigin(nodeRadius, nodeRadius);
+
+    sf::RectangleShape testShape;
+    testShape.setFillColor(sf::Color::Yellow);
 
     RtAudio::StreamParameters parameters;
-    if (argc > 1) {
-        parameters.deviceId = atoi(argv[1]);
-    } else {
-        parameters.deviceId = adc.getDefaultInputDevice();
-    }
+    parameters.deviceId = adc.getDefaultInputDevice();
     parameters.nChannels = 1;
     parameters.firstChannel = 0;
 
@@ -178,41 +172,52 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    std::cout << "\nPress any letter and then press enter\n";
-    std::cin.ignore();
+    char input;
+    std::cout << "\nRecording ... press <enter> to quit.\n";
+//    std::cin.get( input );
 
-    begin = std::chrono::steady_clock::now();
     sf::RenderWindow window(sf::VideoMode(1280, 900), "FFT visualiser");
 
     window.setVerticalSyncEnabled(true);
     while (window.isOpen()) {
+
         sf::Event event;
         while (window.pollEvent(event)) {
             if (event.type == sf::Event::Closed)
                 window.close();
         }
-        std::chrono::duration<double> elapsed_seconds = std::chrono::steady_clock::now() - begin;
-        if (elapsed_seconds.count() > 5) {
-            //cleanup
-            output.close();
-            return 0;
+        //gen shapes
+        node.setPosition(640, 450);
+        testShape.setSize(sf::Vector2f((int)barWidth, 200));
+        for (i = 0; i < bandNumber; i++) {
+            double height = log10(v[i]) * 50;
+            double historyHeight = log10(meanHistory[i]) * 50;
+            bars[i].setSize(sf::Vector2f(barWidth, height - 50));
+            bars[i].setOrigin(bars[i].getSize().x / 2, bars[i].getSize().y);
+            bars[i].setRotation(angularWidth * i * 180.0 / pi);
+            bars[i].setPosition(node.getPosition().x + nodeRadius * sin(angularWidth * i), node.getPosition().y - nodeRadius * cos(angularWidth * i));
+
+            historyBars[i].setSize(sf::Vector2f(barWidth, historyHeight - 50));
+//            historyBars[i].setPosition(i*(width*2 + 1), 1000 - historyHeight);
+
+            historyBars[i].setOrigin(historyBars[i].getSize().x / 2, historyBars[i].getSize().y);
+            historyBars[i].setRotation(angularWidth * i * 180.0 / pi);
+            historyBars[i].setPosition(node.getPosition().x + nodeRadius * sin(angularWidth * i), node.getPosition().y - nodeRadius * cos(angularWidth * i));
         }
-        for (i = 0; i < bandNumber / 2; i++) {
-            double height = log10(v[i]) * 100;
-            double historyHeight = log10(meanHistory[i]) * 100;
-            bars[i].setSize(sf::Vector2f(2*width, height));
-            bars[i].setPosition(i*(width*2 + 1), 1000 - height);
-            historyBars[i].setSize(sf::Vector2f(2*width, historyHeight));
-            historyBars[i].setPosition(i*(width*2 + 1), 1000 - historyHeight);
-        }
-        //window.clear(sf::Color::Black)2
+//        testShape.setSize(sf::Vector2f(400, 400));
+        testShape.setOrigin(testShape.getSize().x / 2, testShape.getSize().y);
+        testShape.setRotation(30);
+        testShape.setPosition(node.getPosition().x + nodeRadius * sin(pi/6), node.getPosition().y - nodeRadius * cos(pi/6));
         window.clear();
-        for (i = 0; i < bandNumber / 2; i++) {
+        //draw
+//        window.draw(testShape);
+        window.draw(node);
+        for (i = 0; i < bandNumber; i++) {
             window.draw(bars[i]);
             window.draw(historyBars[i]);
         }
         window.display();
+
     }
-    output.close();
     return 0;
 }
