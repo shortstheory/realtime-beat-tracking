@@ -205,6 +205,8 @@ int main()
             historyBars[i].setPosition(node.getPosition().x + nodeRadius * sin(angularWidth * i), node.getPosition().y - nodeRadius * cos(angularWidth * i));
             if (height > historyHeight * 1.2) {
                 bars[i].setFillColor(sf::Color(0, 200, 0));
+            } else {
+                bars[i].setFillColor(sf::Color(200, (256 / bandNumber) * i, (256 / bandNumber) * i));
             }
         }
 //        testShape.setSize(sf::Vector2f(400, 400));
