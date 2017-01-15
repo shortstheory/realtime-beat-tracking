@@ -203,6 +203,9 @@ int main()
             historyBars[i].setOrigin(historyBars[i].getSize().x / 2, historyBars[i].getSize().y);
             historyBars[i].setRotation(angularWidth * i * 180.0 / pi);
             historyBars[i].setPosition(node.getPosition().x + nodeRadius * sin(angularWidth * i), node.getPosition().y - nodeRadius * cos(angularWidth * i));
+            if (height > historyHeight * 1.2) {
+                bars[i].setFillColor(sf::Color(0, 200, 0));
+            }
         }
 //        testShape.setSize(sf::Vector2f(400, 400));
         testShape.setOrigin(testShape.getSize().x / 2, testShape.getSize().y);
