@@ -204,9 +204,11 @@ int main()
             historyBars[i].setRotation(angularWidth * i * 180.0 / pi);
             historyBars[i].setPosition(node.getPosition().x + nodeRadius * sin(angularWidth * i), node.getPosition().y - nodeRadius * cos(angularWidth * i));
             if (height > historyHeight * 1.2) {
-                bars[i].setFillColor(sf::Color(0, 200, 0));
+                bars[i].setFillColor(sf::Green);
+                node.setFillColor(sf::Green);
             } else {
                 bars[i].setFillColor(sf::Color(200, (256 / bandNumber) * i, (256 / bandNumber) * i));
+                node.setFillColor(sf::Black);
             }
         }
 //        testShape.setSize(sf::Vector2f(400, 400));
